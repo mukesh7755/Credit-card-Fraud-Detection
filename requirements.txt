@@ -2,8 +2,4 @@ pandas
 numpy
 scikit-learn
 streamlit
-shap
 joblib
-imbalanced-learn
-matplotlib
-seaborn

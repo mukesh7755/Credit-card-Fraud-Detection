@@ -1,50 +1,70 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
 import joblib
-import shap
 
-st.set_page_config(page_title="Fraud Detection Dashboard")
+# Page Configuration
+st.set_page_config(
+    page_title="Credit Card Fraud Detection",
+    page_icon="💳",
+    layout="wide"
+)
 
+# Title
 st.title("💳 Credit Card Fraud Detection System")
+st.markdown("### Predict whether a transaction is Fraudulent or Legitimate")
 
-# Load model
-model = joblib.load("models/model.pkl")
+# Load Trained Model
+@st.cache_resource
+def load_model():
+    return joblib.load("models/model.pkl")
 
-st.write("Enter transaction details below:")
+model = load_model()
 
-# Create input fields
+st.markdown("---")
+st.subheader("Enter Transaction Details")
+
+# Create 3 columns layout
+col1, col2, col3 = st.columns(3)
+
 input_data = []
 
+# V1 to V28 inputs
 for i in range(1, 29):
-    value = st.number_input(f"V{i}", value=0.0)
+    if i <= 10:
+        value = col1.number_input(f"V{i}", value=0.0)
+    elif i <= 20:
+        value = col2.number_input(f"V{i}", value=0.0)
+    else:
+        value = col3.number_input(f"V{i}", value=0.0)
     input_data.append(value)
 
-amount = st.number_input("Amount", value=0.0)
-time = st.number_input("Time", value=0.0)
+# Amount and Time inputs
+amount = st.number_input("Transaction Amount", min_value=0.0, value=0.0)
+time = st.number_input("Transaction Time", min_value=0.0, value=0.0)
 
 input_data.append(amount)
 input_data.append(time)
 
 input_array = np.array([input_data])
 
-if st.button("Predict Transaction"):
+st.markdown("---")
+
+# Prediction Button
+if st.button("🔍 Predict Transaction"):
 
     prediction = model.predict(input_array)
+    probability = model.predict_proba(input_array)[0][1]
+
+    st.subheader("Prediction Result")
 
     if prediction[0] == 1:
         st.error("⚠️ Fraudulent Transaction Detected!")
     else:
         st.success("✅ Legitimate Transaction")
 
-    # SHAP Explainability
-    st.subheader("🔍 Model Explainability (SHAP)")
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_array)
+    st.markdown(f"### Fraud Probability Score: `{probability:.4f}`")
 
-    shap_df = pd.DataFrame({
-        "Feature": [f"V{i}" for i in range(1, 29)] + ["Amount", "Time"],
-        "Impact": shap_values[1][0]
-    })
+    st.progress(float(probability))
 
-    st.dataframe(shap_df.sort_values(by="Impact", ascending=False))
+st.markdown("---")
+st.caption("Built by Mukesh | Machine Learning Fraud Detection Project")
